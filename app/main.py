@@ -31,7 +31,7 @@ print(f"Upload directory set to: {os.path.abspath(UPLOAD_DIR)}")
 # CORS Middleware (already configured)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Your frontend origin
+    allow_origins=["http://localhost:5173"], # Your frontend origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

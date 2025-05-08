@@ -10,7 +10,7 @@ from fastapi import (
     Request # Import Request
 )
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 # Use the existing synchronous get_db dependency
@@ -110,7 +110,8 @@ def register_tournament(
         )
 
     # Prepare the response using the Pydantic schema
-    response_data = TournamentRead.model_validate(created_tournament).model_dump(by_alias=True) # Use by_alias=True
+    response_data = TournamentRead.model_validate(created_tournament, from_attributes=True).model_dump(by_alias=True)
+    
 
     # Construct the full banner URL if a banner exists
     if created_tournament.banner_filename:
@@ -119,4 +120,66 @@ def register_tournament(
     else:
         response_data["banner_url"] = None
 
+    return response_data
+
+@router.get(
+    "/",
+    response_model=List[TournamentRead],
+    status_code=status.HTTP_200_OK
+)
+def get_tournaments(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a list of tournaments with pagination support.
+    """
+    tournaments = tournament_crud.get_tournaments(db, skip=skip, limit=limit)
+    
+    # Add banner URLs to each tournament
+    response_data = []
+    base_url = str(request.base_url).rstrip('/')
+    
+    for tournament in tournaments:
+        tournament_data = TournamentRead.model_validate(tournament, from_attributes=True).model_dump(by_alias=True)
+        if tournament.banner_filename:
+            tournament_data["banner_url"] = f"{base_url}{BANNER_URL_PREFIX}/{tournament.banner_filename}"
+        else:
+            tournament_data["banner_url"] = None
+        response_data.append(tournament_data)
+    
+    return response_data
+
+@router.get(
+    "/{tournament_id}",
+    response_model=TournamentRead,
+    status_code=status.HTTP_200_OK
+)
+def get_tournament(
+    tournament_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a specific tournament by ID.
+    """
+    tournament = tournament_crud.get_tournament(db, tournament_id=tournament_id)
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tournament with ID {tournament_id} not found"
+        )
+    
+    # Prepare the response using the Pydantic schema
+    response_data = TournamentRead.model_validate(tournament, from_attributes=True).model_dump(by_alias=True)
+    
+    # Add banner URL if exists
+    if tournament.banner_filename:
+        base_url = str(request.base_url).rstrip('/')
+        response_data["banner_url"] = f"{base_url}{BANNER_URL_PREFIX}/{tournament.banner_filename}"
+    else:
+        response_data["banner_url"] = None
+    
     return response_data
