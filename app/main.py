@@ -7,6 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models
 from app.database.database import engine
 from app.database.database import Base
+from sqlalchemy import create_engine
+
+DATABASE_URL = os.environ["DATABASE_URL"]
+engine = create_engine("postgresql://postgres:postgres@localhost:5432/postgres")
 
 print("Attempting to create tables...")
 try:
