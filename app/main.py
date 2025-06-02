@@ -30,12 +30,14 @@ app = FastAPI(
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 print(f"Upload directory set to: {os.path.abspath(UPLOAD_DIR)}")
-
+origins = [
+    "http://localhost:5137",                  
+    "https://cricket-gules.vercel.app",       ]
 
 # CORS Middleware (already configured)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Your frontend origin
+    allow_origins=origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
